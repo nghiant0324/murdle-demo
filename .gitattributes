@@ -1,0 +1,5 @@
+Build/*.data filter=lfs diff=lfs merge=lfs -text
+Build/*.wasm filter=lfs diff=lfs merge=lfs -text
+Build/*.mem filter=lfs diff=lfs merge=lfs -text
+Build/*.framework.js filter=lfs diff=lfs merge=lfs -text
+Build/*.loader.js filter=lfs diff=lfs merge=lfs -text

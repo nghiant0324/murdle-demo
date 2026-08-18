@@ -1,0 +1,12 @@
+{
+  "name": "webgl-demo",
+  "version": "1.0.0",
+  "description": "Unity WebGL on Hugging Face",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

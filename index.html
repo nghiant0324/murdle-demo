@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <title>Unity WebGL Player | Murdle</title>
+
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+
+            width: 100%;
+
+            background: black;
+
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+
+        #unity-container {
+
+            width: 100%;
+
+            min-height: 120vh;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+        }
+
+
+        /*
+    Unity giữ 16:9
+*/
+        #unity-canvas {
+
+            width: 100vw;
+
+            /* height: 56.25vw; */
+
+            max-height: none;
+
+            display: block;
+
+            background: #231F20;
+            aspect-ratio: 19.5/9;
+        }
+
+
+
+        #unity-loading-bar {
+
+            position: fixed;
+
+            left: 50%;
+            top: 50%;
+
+            transform: translate(-50%, -50%);
+
+        }
+
+
+
+        #unity-footer {
+            display: none;
+        }
+    </style>
+</head>
+
+
+<body>
+
+    <div id="unity-container">
+
+        <canvas id="unity-canvas" width="1920" height="1080" tabindex="-1">
+        </canvas>
+
+
+        <div id="unity-loading-bar">
+
+            <div id="unity-logo"></div>
+
+            <div id="unity-progress-bar-empty">
+                <div id="unity-progress-bar-full"></div>
+            </div>
+
+        </div>
+
+
+        <div id="unity-warning"></div>
+
+
+        <div id="unity-footer">
+
+            <div id="unity-webgl-logo"></div>
+
+            <div id="unity-fullscreen-button"></div>
+
+            <div id="unity-build-title">
+                Murdle
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+
+        const container = document.querySelector("#unity-container");
+        const canvas = document.querySelector("#unity-canvas");
+
+        const loadingBar = document.querySelector("#unity-loading-bar");
+        const progressBarFull = document.querySelector("#unity-progress-bar-full");
+
+        const fullscreenButton = document.querySelector("#unity-fullscreen-button");
+        const warningBanner = document.querySelector("#unity-warning");
+
+
+
+        function unityShowBanner(msg, type) {
+            const div = document.createElement("div");
+
+            div.innerHTML = msg;
+
+            warningBanner.appendChild(div);
+
+
+            if (type === "error") {
+                div.style = "background:red;padding:10px;";
+            }
+            else {
+                div.style = "background:yellow;padding:10px;";
+
+                setTimeout(() => {
+                    warningBanner.removeChild(div);
+                }, 5000);
+            }
+
+
+            warningBanner.style.display = "block";
+        }
+
+
+
+        const buildUrl = "Build";
+
+
+        const config =
+        {
+            dataUrl:
+                buildUrl + "/Build.data",
+
+            frameworkUrl:
+                buildUrl + "/Build.framework.js",
+
+            codeUrl:
+                buildUrl + "/Build.wasm",
+
+            streamingAssetsUrl:
+                "StreamingAssets",
+
+            companyName:
+                "BugBungBets",
+
+            productName:
+                "Murdle",
+
+            productVersion:
+                "1.0",
+
+            showBanner:
+                unityShowBanner
+        };
+
+
+
+        /*
+            Resize canvas giữ tỷ lệ 16:9
+        */
+
+        function resizeCanvas() {
+
+            const ratio = 19.5 / 9;
+
+
+            let width = window.innerWidth;
+
+            let height = window.innerHeight;
+
+
+
+            if (width / height > ratio) {
+                width = height * ratio;
+            }
+            else {
+                height = width / ratio;
+            }
+
+
+            console.log()
+            canvas.style.width = width + "px";
+
+            canvas.style.height = height + "px";
+
+
+        }
+
+
+
+
+        /*
+            Xử lý xoay màn hình
+        */
+
+        function checkOrientation() {
+
+            if (window.innerHeight > window.innerWidth) {
+
+                canvas.style.display = "none";
+
+
+                if (!document.getElementById("rotate")) {
+
+                    const div = document.createElement("div");
+
+                    div.id = "rotate";
+
+
+                    div.innerHTML =
+                        `
+            🔄
+            <br>
+            Vui lòng tắt khoá hướng màn hình và xoay ngang điện thoại
+            `;
+
+
+
+                    div.style.cssText =
+                        `
+            position:fixed;
+            inset:0;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            flex-direction:column;
+
+            background:black;
+            color:white;
+
+            font-size:28px;
+            text-align:center;
+
+            z-index:99999;
+            `;
+
+
+
+                    document.body.appendChild(div);
+
+                }
+
+            }
+            else {
+
+                canvas.style.display = "block";
+
+
+                const rotate = document.getElementById("rotate");
+
+                if (rotate)
+                    rotate.remove();
+
+
+
+                resizeCanvas();
+
+            }
+
+        }
+
+
+
+
+
+        window.addEventListener(
+            "resize",
+            () => {
+                checkOrientation();
+                resizeCanvas();
+            }
+        );
+
+
+        window.addEventListener(
+            "orientationchange",
+            () => {
+                setTimeout(() => {
+                    checkOrientation();
+                    resizeCanvas();
+                }, 300);
+            }
+        );
+
+
+
+        checkOrientation();
+
+
+
+
+
+        loadingBar.style.display = "block";
+
+
+
+        const script = document.createElement("script");
+
+        script.src =
+            buildUrl + "/Build.loader.js";
+
+
+
+        script.onload = () => {
+
+
+            createUnityInstance(
+                canvas,
+                config,
+
+                (progress) => {
+                    progressBarFull.style.width =
+                        (100 * progress) + "%";
+                }
+
+            )
+                .then((unityInstance) => {
+
+
+                    loadingBar.style.display = "none";
+
+
+                    fullscreenButton.onclick = () => {
+
+                        unityInstance.SetFullscreen(1);
+
+                    };
+
+
+                    resizeCanvas();
+
+
+                })
+                .catch((message) => {
+
+                    alert(message);
+
+                });
+
+
+        };
+
+
+
+        document.body.appendChild(script);
+
+
+
+    </script>
+
+
+</body>
+
+</html>
