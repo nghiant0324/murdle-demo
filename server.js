@@ -109,6 +109,14 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/debug-files', (req, res) => {
+  const buildDir = path.join(__dirname, 'Build');
+  fs.readdir(buildDir, (err, files) => {
+    if (err) return res.status(500).send(err.message);
+    res.json(files);
+  });
+});
+
 // Fallback: nếu request có đuôi file (e.g., .js, .wasm, .data) mà không tìm thấy -> 404
 // Nếu không có đuôi file (SPA routes) -> trả về index.html
 app.get('*', (req, res) => {
