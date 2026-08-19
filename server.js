@@ -57,6 +57,7 @@ const path = require('path');
 const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 7860;
+const expressStaticGzip = require('express-static-gzip');
 
 
 // Log request với timestamp và method/url
@@ -76,28 +77,22 @@ app.use('/Build', (req, res, next) => {
 });
 
 // Phục vụ file tĩnh với header đúng
-app.use('/Build', express.static(path.join(__dirname, 'Build'), {
-  setHeaders: (res, filePath) => {
-    const ext = path.extname(filePath).toLowerCase();
-    switch (ext) {
-      case '.wasm':
-        res.set('Content-Type', 'application/wasm');
-        break;
-      case '.data':
-        res.set('Content-Type', 'application/octet-stream');
-        break;
-      case '.js':
-        res.set('Content-Type', 'application/javascript');
-        break;
-      case '.mem':
-      case '.symbols':
-        res.set('Content-Type', 'application/octet-stream');
-        break;
-      default:
-        break;
+app.use('/Build', expressStaticGzip(path.join(__dirname, 'Build'), {
+    enableBrotli: true,           // hỗ trợ file .br
+    orderPreference: ['br', 'gz'], // ưu tiên Brotli nếu client hỗ trợ
+    setHeaders: (res, filePath) => {
+        // Giữ nguyên MIME types cho các file
+        const ext = path.extname(filePath).toLowerCase();
+        switch (ext) {
+            case '.wasm': res.set('Content-Type', 'application/wasm'); break;
+            case '.data': res.set('Content-Type', 'application/octet-stream'); break;
+            case '.js':   res.set('Content-Type', 'application/javascript'); break;
+            case '.mem':
+            case '.symbols': res.set('Content-Type', 'application/octet-stream'); break;
+        }
+        // CORS header
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     }
-    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-  }
 }));
 
 // Keep-alive route cho bot ping (để giữ server không bị sleep)
@@ -108,14 +103,6 @@ app.get('/keep-alive', (req, res) => {
 // Trang chủ
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/debug-files', (req, res) => {
-  const buildDir = path.join(__dirname, 'Build');
-  fs.readdir(buildDir, (err, files) => {
-    if (err) return res.status(500).send(err.message);
-    res.json(files);
-  });
 });
 
 // Fallback: nếu request có đuôi file (e.g., .js, .wasm, .data) mà không tìm thấy -> 404
