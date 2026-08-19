@@ -1,12 +1,63 @@
+// const express = require('express');
+// const path = require('path');
+// const app = express();
+// const PORT = process.env.PORT || 7860;
+
+// // Log request
+// app.use((req, res, next) => {
+//   console.log(`${req.method} ${req.url}`);
+//   next();
+// });
+
+// // Phục vụ file tĩnh với header đúng
+// app.use('/Build', express.static(path.join(__dirname, 'Build'), {
+//   setHeaders: (res, filePath) => {
+//     const ext = path.extname(filePath).toLowerCase();
+//     switch (ext) {
+//       case '.wasm':
+//         res.set('Content-Type', 'application/wasm');
+//         break;
+//       case '.data':
+//         res.set('Content-Type', 'application/octet-stream');
+//         break;
+//       case '.js':
+//         res.set('Content-Type', 'application/javascript');
+//         break;
+//       case '.mem':
+//       case '.symbols':
+//         res.set('Content-Type', 'application/octet-stream');
+//         break;
+//       default:
+//         break;
+//     }
+//     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+//   }
+// }));
+
+// app.get('/keep-alive', (req, res) => {
+//   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+// });
+// // Trang chủ
+// app.get('/', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'index.html'));
+// });
+
+// // Fallback
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'index.html'));
+// });
+
+// app.listen(PORT, () => {
+//   console.log(`Server running on http://localhost:${PORT}`);
+// });
+
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const compression = require('compression'); // cài: npm install compression
 const app = express();
 const PORT = process.env.PORT || 7860;
 
-// Bật nén gzip cho tất cả response (giảm dung lượng tải)
-app.use(compression({ threshold: 0 }));
 
 // Log request với timestamp và method/url
 app.use((req, res, next) => {
@@ -24,46 +75,32 @@ app.use('/Build', (req, res, next) => {
   next();
 });
 
-// Phục vụ file tĩnh với header đúng và ép cache
+// Phục vụ file tĩnh với header đúng
 app.use('/Build', express.static(path.join(__dirname, 'Build'), {
   setHeaders: (res, filePath) => {
     const ext = path.extname(filePath).toLowerCase();
-    
-    // Thiết lập Content-Type và Cache-Control cho từng loại
     switch (ext) {
       case '.wasm':
         res.set('Content-Type', 'application/wasm');
-        // Cache mạnh 1 năm (không cần xác thực lại)
-        res.set('Cache-Control', 'public, max-age=31536000, immutable');
         break;
       case '.data':
         res.set('Content-Type', 'application/octet-stream');
-        // Cache mạnh 1 năm cho file 250MB
-        res.set('Cache-Control', 'public, max-age=31536000, immutable');
         break;
       case '.js':
         res.set('Content-Type', 'application/javascript');
-        // Cache 1 ngày cho JS (có thể thay đổi thường xuyên hơn)
-        res.set('Cache-Control', 'public, max-age=86400');
         break;
       case '.mem':
       case '.symbols':
         res.set('Content-Type', 'application/octet-stream');
-        res.set('Cache-Control', 'public, max-age=31536000, immutable');
         break;
       default:
-        // Các file khác (html, css, ...) cache 1 giờ
-        res.set('Cache-Control', 'public, max-age=3600');
         break;
     }
-    
-    // Cho phép chia sẻ tài nguyên cross-origin (nếu cần)
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    // Giữ nguyên ETag mặc định của express.static (vẫn hữu ích nếu có cache validation)
   }
 }));
 
-// Keep-alive route cho bot ping
+// Keep-alive route cho bot ping (để giữ server không bị sleep)
 app.get('/keep-alive', (req, res) => {
   res.status(200).send('OK');
 });
@@ -73,7 +110,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Debug: danh sách file trong Build
 app.get('/debug-files', (req, res) => {
   const buildDir = path.join(__dirname, 'Build');
   fs.readdir(buildDir, (err, files) => {
@@ -83,9 +119,11 @@ app.get('/debug-files', (req, res) => {
 });
 
 // Fallback: nếu request có đuôi file (e.g., .js, .wasm, .data) mà không tìm thấy -> 404
+// Nếu không có đuôi file (SPA routes) -> trả về index.html
 app.get('*', (req, res) => {
   const ext = path.extname(req.url);
   if (ext) {
+    // Request file với đuôi nhưng không có trong static => 404
     console.warn(`[404] File not found: ${req.url}`);
     return res.status(404).send('File not found');
   }
