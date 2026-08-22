@@ -57,37 +57,27 @@ const app = express();
 const PORT = process.env.PORT || 7860;
 const expressStaticGzip = require('express-static-gzip');
 
-// Log
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-app.use('/Build', express.static(path.join(__dirname, 'Build'), {
+// Phục vụ file nén từ thư mục Build
+app.use('/Build', expressStaticGzip(path.join(__dirname, 'Build'), {
+  enableBrotli: true,
+  orderPreference: ['br'],
   setHeaders: (res, filePath) => {
-    const fileName = path.basename(filePath);
-
-    // Xác định Content-Type dựa vào tên file gốc
-    if (fileName.includes('framework.js') || fileName.includes('loader.js')) {
-      res.set('Content-Type', 'application/javascript');
-    } else if (fileName.includes('.wasm')) {
-      res.set('Content-Type', 'application/wasm');
-    } else if (fileName.includes('.data')) {
-      res.set('Content-Type', 'application/octet-stream');
-    } else if (fileName.endsWith('.js.br') || fileName.endsWith('.js')) {
-      res.set('Content-Type', 'application/javascript');
-    } else {
-      res.set('Content-Type', 'application/octet-stream');
-    }
-
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.wasm') res.set('Content-Type', 'application/wasm');
+    else if (ext === '.data') res.set('Content-Type', 'application/octet-stream');
+    else if (ext === '.js') res.set('Content-Type', 'application/javascript');
+    else res.set('Content-Type', 'application/octet-stream');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
   }
 }));
 
-// Keep-alive
 app.get('/keep-alive', (req, res) => res.status(200).send('OK'));
 
-// Trang chủ
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
