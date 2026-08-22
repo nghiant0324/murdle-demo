@@ -62,15 +62,18 @@ app.use((req, res, next) => {
   next();
 });
 
-// Phục vụ file nén từ thư mục Build
 app.use('/Build', expressStaticGzip(path.join(__dirname, 'Build'), {
   enableBrotli: true,
   orderPreference: ['br'],
   setHeaders: (res, filePath) => {
-    const ext = path.extname(filePath).toLowerCase();
-    if (ext === '.wasm') res.set('Content-Type', 'application/wasm');
-    else if (ext === '.data') res.set('Content-Type', 'application/octet-stream');
-    else if (ext === '.js') res.set('Content-Type', 'application/javascript');
+    // Lấy tên file (không đường dẫn)
+    const basename = path.basename(filePath);
+    // Loại bỏ phần mở rộng .br nếu có
+    const baseWithoutBr = basename.replace(/\.br$/, '');
+    // Xác định Content-Type dựa trên phần mở rộng thực tế (sau khi bỏ .br)
+    if (baseWithoutBr.endsWith('.wasm')) res.set('Content-Type', 'application/wasm');
+    else if (baseWithoutBr.endsWith('.data')) res.set('Content-Type', 'application/octet-stream');
+    else if (baseWithoutBr.endsWith('.js')) res.set('Content-Type', 'application/javascript');
     else res.set('Content-Type', 'application/octet-stream');
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
   }
