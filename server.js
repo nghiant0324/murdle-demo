@@ -63,26 +63,18 @@ app.use((req, res, next) => {
   next();
 });
 
-// Phục vụ file nén Brotli
-app.use('/Build', expressStaticGzip(path.join(__dirname, 'Build'), {
-  enableBrotli: true,           // Bật Brotli
-  orderPreference: ['br'],       // Ưu tiên Brotli
-  serveStatic: {
-    // Vẫn set các header MIME và CORS
-    setHeaders: (res, filePath) => {
-      const ext = path.extname(filePath).toLowerCase();
-      switch (ext) {
-        case '.wasm': res.set('Content-Type', 'application/wasm'); break;
-        case '.data': res.set('Content-Type', 'application/octet-stream'); break;
-        case '.js':   res.set('Content-Type', 'application/javascript'); break;
-        case '.mem':
-        case '.symbols': res.set('Content-Type', 'application/octet-stream'); break;
-        // Nếu tên file có .br ở cuối, express-static-gzip sẽ tự xử lý
-      }
-      res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    },
-    // Đảm bảo không fallthrough để tránh 404 lộn xộn
-    fallthrough: false
+app.use('/Build', express.static(path.join(__dirname, 'Build'), {
+  setHeaders: (res, filePath) => {
+    const ext = path.extname(filePath).toLowerCase();
+    switch (ext) {
+      case '.wasm': res.set('Content-Type', 'application/wasm'); break;
+      case '.data': res.set('Content-Type', 'application/octet-stream'); break;
+      case '.js':   res.set('Content-Type', 'application/javascript'); break;
+      case '.br':   res.set('Content-Type', 'application/octet-stream'); break; // thêm dòng này
+      case '.mem':
+      case '.symbols': res.set('Content-Type', 'application/octet-stream'); break;
+    }
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
   }
 }));
 
