@@ -63,23 +63,27 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/Build', express.static(path.join(__dirname, 'Build'), {
+// Middleware phục vụ file nén Brotli
+app.use('/Build', expressStaticGzip(path.join(__dirname, 'Build'), {
+  enableBrotli: true,           // Bật Brotli
+  orderPreference: ['br'],      // Ưu tiên Brotli hơn gzip
   setHeaders: (res, filePath) => {
+    // Đặt đúng MIME type dựa trên phần mở rộng của file GỐC
+    // (khi file đã giải nén, Unity cần biết loại)
     const ext = path.extname(filePath).toLowerCase();
-    switch (ext) {
-      case '.wasm': res.set('Content-Type', 'application/wasm'); break;
-      case '.data': res.set('Content-Type', 'application/octet-stream'); break;
-      case '.js':   res.set('Content-Type', 'application/javascript'); break;
-      case '.br':   res.set('Content-Type', 'application/octet-stream'); break; // thêm dòng này
-      case '.mem':
-      case '.symbols': res.set('Content-Type', 'application/octet-stream'); break;
-    }
+    if (ext === '.wasm') res.set('Content-Type', 'application/wasm');
+    else if (ext === '.data') res.set('Content-Type', 'application/octet-stream');
+    else if (ext === '.js') res.set('Content-Type', 'application/javascript');
+    else if (ext === '.mem' || ext === '.symbols') res.set('Content-Type', 'application/octet-stream');
+    // Quan trọng: Cross-Origin
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
   }
 }));
 
+// Keep-alive
 app.get('/keep-alive', (req, res) => res.status(200).send('OK'));
 
+// Trang chủ
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });

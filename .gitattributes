@@ -1,15 +1,13 @@
-
 Build/*.data          filter=lfs diff=lfs merge=lfs -text
-Build/*.wasm          filter=lfs diff=lfs merge=lfs -text
+# Build/*.wasm          filter=lfs diff=lfs merge=lfs -text
 Build/*.mem           filter=lfs diff=lfs merge=lfs -text
-Build/*.framework.js  filter=lfs diff=lfs merge=lfs -text
-Build/*.loader.js     filter=lfs diff=lfs merge=lfs -text
-
+# Build/*.framework.js  filter=lfs diff=lfs merge=lfs -text
+# Build/*.loader.js     filter=lfs diff=lfs merge=lfs -text
 Build/*.data.br          filter=lfs diff=lfs merge=lfs -text
-Build/*.wasm.br          filter=lfs diff=lfs merge=lfs -text
-Build/*.framework.js.br  filter=lfs diff=lfs merge=lfs -text
-Build/*.loader.js.br     filter=lfs diff=lfs merge=lfs -text
-
+# Build/*.wasm.br          filter=lfs diff=lfs merge=lfs -text
+# Build/*.framework.js.br  filter=lfs diff=lfs merge=lfs -text
+# Build/*.loader.js.br     filter=lfs diff=lfs merge=lfs -text
 Build/*.unityweb      filter=lfs diff=lfs merge=lfs -text
 Build/*.symbols       filter=lfs diff=lfs merge=lfs -text
 Build/*.mem           filter=lfs diff=lfs merge=lfs -text
+Build/* filter=lfs diff=lfs merge=lfs -text
