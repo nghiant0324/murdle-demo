@@ -63,19 +63,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// Middleware phục vụ file nén Brotli
-app.use('/Build', expressStaticGzip(path.join(__dirname, 'Build'), {
-  enableBrotli: true,           // Bật Brotli
-  orderPreference: ['br'],      // Ưu tiên Brotli hơn gzip
+app.use('/Build', express.static(path.join(__dirname, 'Build'), {
   setHeaders: (res, filePath) => {
-    // Đặt đúng MIME type dựa trên phần mở rộng của file GỐC
-    // (khi file đã giải nén, Unity cần biết loại)
-    const ext = path.extname(filePath).toLowerCase();
-    if (ext === '.wasm') res.set('Content-Type', 'application/wasm');
-    else if (ext === '.data') res.set('Content-Type', 'application/octet-stream');
-    else if (ext === '.js') res.set('Content-Type', 'application/javascript');
-    else if (ext === '.mem' || ext === '.symbols') res.set('Content-Type', 'application/octet-stream');
-    // Quan trọng: Cross-Origin
+    const fileName = path.basename(filePath);
+
+    // Xác định Content-Type dựa vào tên file gốc
+    if (fileName.includes('framework.js') || fileName.includes('loader.js')) {
+      res.set('Content-Type', 'application/javascript');
+    } else if (fileName.includes('.wasm')) {
+      res.set('Content-Type', 'application/wasm');
+    } else if (fileName.includes('.data')) {
+      res.set('Content-Type', 'application/octet-stream');
+    } else if (fileName.endsWith('.js.br') || fileName.endsWith('.js')) {
+      res.set('Content-Type', 'application/javascript');
+    } else {
+      res.set('Content-Type', 'application/octet-stream');
+    }
+
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
   }
 }));
