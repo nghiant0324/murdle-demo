@@ -51,70 +51,56 @@
 //   console.log(`Server running on http://localhost:${PORT}`);
 // });
 
-
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 7860;
 const expressStaticGzip = require('express-static-gzip');
 
-
-// Log request với timestamp và method/url
+// Log
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-// Middleware log đường dẫn file static (debug)
-app.use('/Build', (req, res, next) => {
-  const filePath = path.join(__dirname, 'Build', req.path);
-  console.log(`[Static] Requested: ${req.path} -> looking for ${filePath}`);
-  if (!fs.existsSync(filePath)) {
-    console.warn(`[Static] File NOT FOUND: ${filePath}`);
-  }
-  next();
-});
-
-// Phục vụ file tĩnh với header đúng
+// Phục vụ file nén Brotli
 app.use('/Build', expressStaticGzip(path.join(__dirname, 'Build'), {
-    enableBrotli: true,           // hỗ trợ file .br
-    orderPreference: ['br', 'gz'], // ưu tiên Brotli nếu client hỗ trợ
+  enableBrotli: true,           // Bật Brotli
+  orderPreference: ['br'],       // Ưu tiên Brotli
+  serveStatic: {
+    // Vẫn set các header MIME và CORS
     setHeaders: (res, filePath) => {
-        // Giữ nguyên MIME types cho các file
-        const ext = path.extname(filePath).toLowerCase();
-        switch (ext) {
-            case '.wasm': res.set('Content-Type', 'application/wasm'); break;
-            case '.data': res.set('Content-Type', 'application/octet-stream'); break;
-            case '.js':   res.set('Content-Type', 'application/javascript'); break;
-            case '.mem':
-            case '.symbols': res.set('Content-Type', 'application/octet-stream'); break;
-        }
-        // CORS header
-        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    }
+      const ext = path.extname(filePath).toLowerCase();
+      switch (ext) {
+        case '.wasm': res.set('Content-Type', 'application/wasm'); break;
+        case '.data': res.set('Content-Type', 'application/octet-stream'); break;
+        case '.js':   res.set('Content-Type', 'application/javascript'); break;
+        case '.mem':
+        case '.symbols': res.set('Content-Type', 'application/octet-stream'); break;
+        // Nếu tên file có .br ở cuối, express-static-gzip sẽ tự xử lý
+      }
+      res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
+    // Đảm bảo không fallthrough để tránh 404 lộn xộn
+    fallthrough: false
+  }
 }));
 
-// Keep-alive route cho bot ping (để giữ server không bị sleep)
-app.get('/keep-alive', (req, res) => {
-  res.status(200).send('OK');
-});
+// Keep-alive
+app.get('/keep-alive', (req, res) => res.status(200).send('OK'));
 
 // Trang chủ
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Fallback: nếu request có đuôi file (e.g., .js, .wasm, .data) mà không tìm thấy -> 404
-// Nếu không có đuôi file (SPA routes) -> trả về index.html
+// Fallback SPA
 app.get('*', (req, res) => {
   const ext = path.extname(req.url);
   if (ext) {
-    // Request file với đuôi nhưng không có trong static => 404
     console.warn(`[404] File not found: ${req.url}`);
     return res.status(404).send('File not found');
   }
-  // SPA fallback: gửi index.html
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
