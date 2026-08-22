@@ -86,10 +86,8 @@ app.use('/Build', expressStaticGzip(path.join(__dirname, 'Build'), {
   }
 }));
 
-// Keep-alive
 app.get('/keep-alive', (req, res) => res.status(200).send('OK'));
 
-// Trang chủ
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
